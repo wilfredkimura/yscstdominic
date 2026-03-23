@@ -26,6 +26,10 @@ const trashRoutes = require('./routes/trash');
 // Middleware
 app.use(helmet());
 app.use(cors());
+// Webhooks (Must be before express.json() for raw body parsing)
+const webhookRoutes = require('./routes/webhooks');
+app.use('/api/webhooks', webhookRoutes);
+
 app.use(express.json());
 const { requireClerkAuth } = require('./middleware/clerkAuth');
 app.use(morgan('dev'));
