@@ -7,18 +7,29 @@ const { authMiddleware, adminRequired } = require('../middleware/customAuth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
 
-// Register
+// Register (Legacy - now use sync)
 router.post('/register', async (req, res) => {
-    const { email, password, fullName } = req.body;
+    res.status(410).json({ message: 'Registration has moved to Clerk' });
+});
+
+// User Sync (Clerk)
+router.post('/sync', authMiddleware, async (req, res) => {
+    const { email, fullName, profileImageUrl } = req.body;
+    const clerkId = req.user.id; // From authMiddleware bridge
+
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
         const result = await db.query(
-            'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, role',
-            [email, hashedPassword, fullName, 'Registered User']
+            `INSERT INTO users (clerk_id, email, full_name, profile_image_url)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (clerk_id) DO UPDATE SET
+                email = EXCLUDED.email,
+                full_name = EXCLUDED.full_name,
+                profile_image_url = EXCLUDED.profile_image_url,
+                updated_at = CURRENT_TIMESTAMP
+             RETURNING *`,
+            [clerkId, email, fullName, profileImageUrl]
         );
-        const user = result.rows[0];
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-        res.status(201).json({ user, token });
+        res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

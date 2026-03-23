@@ -21,12 +21,21 @@ const commentRoutes = require('./routes/comments');
 const resourceRoutes = require('./routes/resources');
 const analyticsRoutes = require('./routes/analytics');
 const searchRoutes = require('./routes/search');
+const trashRoutes = require('./routes/trash');
 
 // Middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+const { requireClerkAuth } = require('./middleware/clerkAuth');
 app.use(morgan('dev'));
+
+// Clerk Session Middleware (Optional: applies to ALL routes, or just some)
+// For now, let's use it selectively in our bridge customAuth or globally
+// If globally, it might interfere with public routes if not configured correctly.
+// Let's use the loose version or just include it here.
+const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
+app.use(ClerkExpressWithAuth());
 
 // Route Registration
 app.use('/api/blog/categories', categoryRoutes);
@@ -42,6 +51,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/admin/trash', trashRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

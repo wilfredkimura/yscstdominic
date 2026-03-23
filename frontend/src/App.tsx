@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/clerk-react';
 import { ScrollToTop } from './components/ScrollToTop';
+import { AxiosInterceptor } from './components/providers/AxiosInterceptor';
+import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
 import { BlogPage } from './pages/BlogPage';
@@ -88,11 +91,19 @@ function AppRoutes() {
 }
 
 export function App() {
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
   return (
-    <Router>
-      <ScrollToTop />
-      <AppRoutes />
-      <Analytics />
-    </Router>
+    <ClerkProvider publishableKey={clerkPubKey}>
+      <AxiosInterceptor>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <AppRoutes />
+            <Analytics />
+          </Router>
+        </AuthProvider>
+      </AxiosInterceptor>
+    </ClerkProvider>
   );
 }

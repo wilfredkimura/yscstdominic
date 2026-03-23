@@ -1,3 +1,15 @@
+/**
+ * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
+ */
+exports.shorthands = undefined;
+
+/**
+ * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param run {() => void | undefined}
+ * @returns {Promise<void> | void}
+ */
+exports.up = (pgm) => {
+  pgm.sql(`
 -- Database Schema for YSC St. Dominic Platform
 
 -- Users table (Local Auth + Optional Clerk)
@@ -167,3 +179,30 @@ CREATE TABLE page_views (
     user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+  `);
+};
+
+/**
+ * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param run {() => void | undefined}
+ * @returns {Promise<void> | void}
+ */
+exports.down = (pgm) => {
+  pgm.sql(`
+    DROP TABLE IF EXISTS page_views CASCADE;
+    DROP TABLE IF EXISTS resources CASCADE;
+    DROP TABLE IF EXISTS prayer_requests CASCADE;
+    DROP TABLE IF EXISTS comments CASCADE;
+    DROP TABLE IF EXISTS gallery_images CASCADE;
+    DROP TABLE IF EXISTS albums CASCADE;
+    DROP TABLE IF EXISTS event_rsvps CASCADE;
+    DROP TABLE IF EXISTS events CASCADE;
+    DROP TABLE IF EXISTS event_categories CASCADE;
+    DROP TABLE IF EXISTS post_views CASCADE;
+    DROP TABLE IF EXISTS blog_posts CASCADE;
+    DROP TABLE IF EXISTS blog_categories CASCADE;
+    DROP TABLE IF EXISTS leaders CASCADE;
+    DROP TABLE IF EXISTS site_configs CASCADE;
+    DROP TABLE IF EXISTS users CASCADE;
+  `);
+};
