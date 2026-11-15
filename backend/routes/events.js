@@ -30,11 +30,11 @@ router.get('/', async (req, res) => {
 
 // Create event
 router.post('/', authMiddleware, adminRequired, async (req, res) => {
-    const { title, slug, date, location, description, category, image_url, is_featured } = req.body;
+    const { title, slug, date, location, description, category, image_url, is_featured, enable_rsvp } = req.body;
     try {
         const result = await db.query(
-            'INSERT INTO events (title, slug, event_date, location, description, category, image_url, is_featured) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [title, slug, date, location, description, category, image_url, is_featured || false]
+            'INSERT INTO events (title, slug, event_date, location, description, category, image_url, is_featured, enable_rsvp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [title, slug, date, location, description, category, image_url, is_featured || false, enable_rsvp || false]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -45,11 +45,11 @@ router.post('/', authMiddleware, adminRequired, async (req, res) => {
 
 // Update event
 router.put('/:id', authMiddleware, adminRequired, async (req, res) => {
-    const { title, slug, date, location, description, category, image_url, is_featured } = req.body;
+    const { title, slug, date, location, description, category, image_url, is_featured, enable_rsvp } = req.body;
     try {
         const result = await db.query(
-            'UPDATE events SET title = $1, slug = $2, event_date = $3, location = $4, description = $5, category = $6, image_url = $7, is_featured = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $9 AND deleted_at IS NULL RETURNING *',
-            [title, slug, date, location, description, category, image_url, is_featured || false, req.params.id]
+            'UPDATE events SET title = $1, slug = $2, event_date = $3, location = $4, description = $5, category = $6, image_url = $7, is_featured = $8, enable_rsvp = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10 AND deleted_at IS NULL RETURNING *',
+            [title, slug, date, location, description, category, image_url, is_featured || false, enable_rsvp || false, req.params.id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Event not found' });
         res.json(result.rows[0]);
@@ -76,10 +76,15 @@ router.post('/:id/rsvp', async (req, res) => {
         const { name, phone_number } = req.body;
         const eventId = req.params.id;
 
-        // Verify event exists
+        // Verify event exists and RSVP is enabled
         const eventRes = await db.query('SELECT * FROM events WHERE id = $1 AND deleted_at IS NULL', [eventId]);
         if (eventRes.rows.length === 0) {
             return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const event = eventRes.rows[0];
+        if (!event.enable_rsvp) {
+            return res.status(400).json({ error: 'RSVP is not enabled for this event' });
         }
 
         const result = await db.query(
@@ -103,6 +108,17 @@ router.get('/:id/rsvps', authMiddleware, adminRequired, async (req, res) => {
             [req.params.id]
         );
         res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete RSVP (Admin Only)
+router.delete('/rsvp/:id', authMiddleware, adminRequired, async (req, res) => {
+    try {
+        const result = await db.query('DELETE FROM event_rsvps WHERE id = $1 RETURNING *', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'RSVP not found' });
+        res.json({ message: 'RSVP deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
