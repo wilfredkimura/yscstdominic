@@ -10,7 +10,7 @@ import { BlogPostPage } from './pages/BlogPostPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
 import { GetInvolvedPage } from './pages/GetInvolvedPage';
-import { AuthPage } from './pages/AuthPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
@@ -20,12 +20,10 @@ import { AdminGalleryPage } from './pages/admin/AdminGalleryPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminLeadersPage } from './pages/admin/AdminLeadersPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
-import { useAuth } from './context/AuthContext';
 import { Analytics } from '@vercel/analytics/react';
 import api from './services/api';
 
 function AppRoutes() {
-  const { user } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -44,19 +42,10 @@ function AppRoutes() {
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="get-involved" element={<GetInvolvedPage />} />
-        <Route
-          path="login"
-          element={user ? <Navigate to="/admin" replace /> : <AuthPage />}
-        />
-        <Route
-          path="signup"
-          element={user ? <Navigate to="/admin" replace /> : <AuthPage />}
-        />
-        <Route
-          path="register"
-          element={user ? <Navigate to="/admin" replace /> : <Navigate to="/signup" replace />}
-        />
       </Route>
+
+      {/* Admin Login (Public) */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
       {/* Admin Routes (Protected) */}
       <Route

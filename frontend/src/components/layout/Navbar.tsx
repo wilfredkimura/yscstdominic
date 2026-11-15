@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, ArrowRight, Search } from 'lucide-react';
+import { Menu, X, User, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SearchOverlay } from './SearchOverlay';
 
@@ -11,6 +11,7 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'Admin';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,25 +101,13 @@ export function Navbar() {
               </button>
 
               <div className="flex items-center space-x-4 ml-4">
-                {!user ? (
+                {isAdmin && (
                   <div className="flex items-center space-x-4">
                     <Link
-                      to="/signup?mode=signup"
-                      className="bg-burgundy text-gold px-6 py-2.5 rounded-xl text-sm font-bold tracking-widest uppercase hover:bg-burgundy-light transition-all shadow-lg hover:shadow-burgundy/20 active:scale-95 flex items-center gap-2 group"
-                    >
-                      <span>Join Community</span>
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      to="/admin"
+                      className="text-[10px] uppercase tracking-wider font-bold text-gold bg-burgundy px-2 py-0.5 rounded shadow-sm hover:bg-burgundy-light transition-all">
+                      Admin
                     </Link>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-4">
-                    {user.role === 'Admin' && (
-                      <Link
-                        to="/admin"
-                        className="text-[10px] uppercase tracking-wider font-bold text-gold bg-burgundy px-2 py-0.5 rounded shadow-sm hover:bg-burgundy-light transition-all">
-                        Admin
-                      </Link>
-                    )}
                     <div className="relative group/user">
                       <button className="bg-burgundy/10 p-2 rounded-full text-burgundy">
                         <User size={20} />
@@ -203,24 +192,14 @@ export function Navbar() {
                 ))}
 
                 <div className="pt-8 mt-8 border-t border-cream-dark space-y-4">
-                  {!user ? (
-                    <Link
-                      to="/signup?mode=signup"
-                      className="w-full bg-burgundy text-gold p-4 rounded-xl text-center font-bold tracking-widest uppercase shadow-lg shadow-burgundy/10 flex items-center justify-center gap-3"
-                    >
-                      <span>Join Community</span>
-                      <ArrowRight size={20} />
-                    </Link>
-                  ) : (
+                  {isAdmin && (
                     <>
-                      {user.role === 'Admin' && (
-                        <Link
-                          to="/admin"
-                          className="text-navy/60 hover:text-burgundy flex items-center space-x-2 group">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gold group-hover:bg-burgundy transition-colors" />
-                          <span>Admin Dashboard</span>
-                        </Link>
-                      )}
+                      <Link
+                        to="/admin"
+                        className="text-navy/60 hover:text-burgundy flex items-center space-x-2 group">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold group-hover:bg-burgundy transition-colors" />
+                        <span>Admin Dashboard</span>
+                      </Link>
                       <button
                         onClick={logout}
                         className="text-xl font-serif text-red-600"
