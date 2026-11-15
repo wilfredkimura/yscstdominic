@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, User, Eye, MessageSquare, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Eye, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import api from '../services/api';
 
@@ -10,55 +10,25 @@ const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504052434569-70ad5836a
 export function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<any>(null);
-  const [comments, setComments] = useState<any[]>([]);
-  const [commentContent, setCommentContent] = useState('');
-  const [authorName, setAuthorName] = useState('');
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
-    const fetchPostAndComments = async () => {
+    const fetchPost = async () => {
       try {
         const res = await api.get(`/blog/${slug}`);
         setPost(res.data);
 
         // Increment view count
         api.post(`/blog/view/${slug}`).catch(err => console.error('Failed to increment views', err));
-
-        if (res.data?.id) {
-          const commRes = await api.get(`/comments/post/${res.data.id}`);
-          setComments(commRes.data);
-        }
       } catch (err) {
-        console.error('Failed to fetch blog post or comments', err);
+        console.error('Failed to fetch blog post', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchPostAndComments();
+    fetchPost();
   }, [slug]);
-
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentContent.trim() || !post?.id) return;
-
-    setSubmitting(true);
-    try {
-      const res = await api.post(`/comments/post/${post.id}`, {
-        content: commentContent,
-        author_name: authorName || 'Anonymous'
-      });
-      setComments((prev) => [res.data, ...prev]);
-      setCommentContent('');
-      setAuthorName('');
-    } catch (err) {
-      console.error('Failed to post comment', err);
-      alert('Failed to post comment. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -142,7 +112,7 @@ export function BlogPostPage() {
           </div>
 
           {/* Article Content */}
-          <article className="prose prose-lg prose-navy max-w-none mb-12">
+          <article className="prose prose-lg prose-navy max-w-none">
             {typeof post.content === 'string' ? (
               post.content.split('\n').map((para: string, idx: number) => (
                 para ? <p key={idx} className="mb-6 text-navy/80 leading-relaxed text-lg">{para}</p> : <br key={idx} />
@@ -155,61 +125,6 @@ export function BlogPostPage() {
               <p className="text-navy/80 leading-relaxed text-lg">{JSON.stringify(post.content)}</p>
             )}
           </article>
-
-          {/* Discussion Section */}
-          <div className="pt-8 md:pt-12 border-t border-cream-dark">
-            <h3 className="text-xl md:text-2xl font-serif font-bold text-navy mb-6 flex items-center gap-2">
-              <MessageSquare size={24} className="text-burgundy" /> Discussion
-            </h3>
-
-            <form onSubmit={handleCommentSubmit} className="bg-cream p-6 rounded-xl mb-8">
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Your Name (Optional)"
-                className="w-full p-3 rounded-lg border border-cream-dark bg-softWhite focus:ring-2 focus:ring-burgundy focus:border-transparent mb-4 text-navy"
-              />
-              <textarea
-                value={commentContent}
-                onChange={(e) => setCommentContent(e.target.value)}
-                className="w-full p-4 rounded-lg border border-cream-dark bg-softWhite focus:ring-2 focus:ring-burgundy focus:border-transparent resize-none h-24 mb-4 text-navy"
-                placeholder="Share your thoughts on this reflection..."
-                required
-              />
-              <div className="flex justify-end">
-                <Button type="submit" size="sm" disabled={submitting}>
-                  {submitting ? 'Posting...' : 'Post Comment'}
-                </Button>
-              </div>
-            </form>
-
-            <div className="space-y-6">
-              {comments.length > 0 ? comments.map((comment) => (
-                <div key={comment.id} className="flex gap-4 p-4 rounded-xl hover:bg-cream/50 transition-colors">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 text-softWhite ${comment.is_pinned ? 'bg-gold shadow-lg ring-2 ring-gold/20' : 'bg-navy'}`}>
-                    {(comment.author_name || 'A').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-navy">{comment.author_name || 'Anonymous'}</span>
-                      {comment.is_pinned && <span className="text-[10px] bg-gold/20 text-gold-dark px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Pinned Reflection</span>}
-                      <span className="text-xs text-navy/50">
-                        {new Date(comment.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-navy/80 text-sm leading-relaxed whitespace-pre-wrap">
-                      {comment.content}
-                    </p>
-                  </div>
-                </div>
-              )) : (
-                <p className="text-center py-8 text-navy/40 font-serif italic text-lg border-2 border-dashed border-cream-dark rounded-2xl">
-                  No reflections yet. Be the first to share your thoughts!
-                </p>
-              )}
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>

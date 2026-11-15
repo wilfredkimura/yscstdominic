@@ -12,9 +12,6 @@ import {
     User as UserIcon,
     Tag,
     X,
-    MessageSquare,
-    EyeOff,
-    Pin,
     FileText,
     Save
 } from 'lucide-react';
@@ -28,10 +25,6 @@ export function AdminBlogPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-    const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-    const [selectedPost, setSelectedPost] = useState<any>(null);
-    const [comments, setComments] = useState<any[]>([]);
-    const [commentLoading, setCommentLoading] = useState(false);
     const [editingBlog, setEditingBlog] = useState<any>(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -164,58 +157,11 @@ export function AdminBlogPage() {
         }
     };
 
-    const handleOpenComments = async (blog: any) => {
-        setSelectedPost(blog);
-        setIsCommentModalOpen(true);
-        setCommentLoading(true);
-        try {
-            const res = await api.get(`/comments/admin/all`); // Or specific /comments/post/:id if filtered by admin
-            // Filtering on frontend for now or update backend to accept postId for admin
-            const postComments = res.data.filter((c: any) => c.post_id === blog.id);
-            setComments(postComments);
-        } catch (err) {
-            console.error('Failed to fetch comments', err);
-        } finally {
-            setCommentLoading(false);
-        }
-    };
-
-    const handleToggleCommentStatus = async (commentId: number, currentStatus: string) => {
-        const newStatus = currentStatus === 'visible' ? 'hidden' : 'visible';
-        try {
-            await api.patch(`/comments/${commentId}/status`, { status: newStatus });
-            setComments(prev => prev.map(c => c.id === commentId ? { ...c, status: newStatus } : c));
-        } catch (err) {
-            console.error('Failed to toggle status', err);
-        }
-    };
-
-    const handleTogglePin = async (commentId: number, currentPinned: boolean) => {
-        try {
-            await api.patch(`/comments/${commentId}/pin`, { is_pinned: !currentPinned });
-            setComments(prev => prev.map(c => c.id === commentId ? { ...c, is_pinned: !currentPinned } : c));
-        } catch (err) {
-            console.error('Failed to toggle pin', err);
-        }
-    };
-
-    const handleDeleteComment = async (commentId: number) => {
-        if (!window.confirm('Delete this comment permanentely?')) return;
-        try {
-            await api.delete(`/comments/${commentId}`);
-            setComments(prev => prev.map(c => c.id === commentId ? { ...c, deleted_at: new Date() } : c).filter(c => !c.deleted_at));
-            // Actually filter it out
-            setComments(prev => prev.filter(c => c.id !== commentId));
-        } catch (err) {
-            console.error('Failed to delete comment', err);
-        }
-    };
-
     const handleDelete = async (id: number) => {
         if (!window.confirm('Are you sure you want to delete this post?')) return;
         setLoading(true);
         try {
-            await api.delete(`/blog/${id}`); // Assuming DELETE /blog/:id
+            await api.delete(`/blog/${id}`);
             fetchBlogs();
         } catch (err) {
             console.error('Failed to delete blog', err);
@@ -331,13 +277,6 @@ export function AdminBlogPage() {
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-2">
-                                        <button
-                                            onClick={() => handleOpenComments(blog)}
-                                            className="p-2 text-navy/40 hover:text-burgundy hover:bg-burgundy/5 rounded-lg transition-colors"
-                                            title="Moderate Comments"
-                                        >
-                                            <MessageSquare size={16} />
-                                        </button>
                                         <button
                                             onClick={() => handleOpenModal(blog)}
                                             className="p-2 text-navy/40 hover:text-burgundy hover:bg-burgundy/5 rounded-lg transition-colors"
@@ -544,70 +483,6 @@ export function AdminBlogPage() {
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Comment Moderation Modal */}
-            {isCommentModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-navy/60 backdrop-blur-sm" onClick={() => setIsCommentModalOpen(false)}></div>
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-navy/5 flex items-center justify-between bg-navy text-softWhite">
-                            <div className="flex items-center space-x-3">
-                                <MessageSquare size={20} className="text-gold" />
-                                <h3 className="text-xl font-serif font-bold truncate max-w-[400px]">Comments: {selectedPost?.title}</h3>
-                            </div>
-                            <button onClick={() => setIsCommentModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-                            {commentLoading ? (
-                                <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-burgundy" /></div>
-                            ) : comments.length > 0 ? (
-                                <div className="space-y-4">
-                                    {comments.map((comment) => (
-                                        <div key={comment.id} className={`p-3 sm:p-4 rounded-xl border ${comment.status === 'hidden' ? 'bg-navy/5 border-navy/10 opacity-60' : 'bg-white border-navy/5 shadow-sm'}`}>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="flex flex-col sm:flex-row sm:items-center">
-                                                    <span className="font-bold text-navy text-sm sm:text-base">{comment.author_name}</span>
-                                                    <span className="text-[9px] sm:text-[10px] text-navy/40 sm:ml-2">{new Date(comment.created_at).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex items-center space-x-0.5 sm:space-x-1">
-                                                    <button
-                                                        onClick={() => handleTogglePin(comment.id, comment.is_pinned)}
-                                                        className={`p-1.5 rounded-lg transition-colors ${comment.is_pinned ? 'text-gold bg-gold/10' : 'text-navy/30 hover:bg-gold/5 hover:text-gold'}`}
-                                                        title={comment.is_pinned ? 'Unpin Reflection' : 'Pin Reflection'}
-                                                    >
-                                                        <Pin size={16} fill={comment.is_pinned ? "currentColor" : "none"} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleToggleCommentStatus(comment.id, comment.status)}
-                                                        className={`p-1.5 rounded-lg transition-colors ${comment.status === 'hidden' ? 'text-navy bg-navy/10' : 'text-navy/30 hover:bg-navy/5 hover:text-navy'}`}
-                                                        title={comment.status === 'hidden' ? 'Make Visible' : 'Hide Comment'}
-                                                    >
-                                                        {comment.status === 'hidden' ? <Eye size={16} /> : <EyeOff size={16} />}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteComment(comment.id)}
-                                                        className="p-1.5 rounded-lg text-navy/30 hover:bg-red-50 hover:text-red-600 transition-colors"
-                                                        title="Delete Permanently"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-navy/80 whitespace-pre-wrap">{comment.content}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-20 text-navy/30 italic font-serif">
-                                    No reflections have been shared on this post yet.
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, FolderOpen } from 'lucide-react';
 import api from '../services/api';
 
 export function GalleryPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [albums, setAlbums] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const [galleryRes, configRes] = await Promise.all([
+        const [galleryRes, albumsRes, configRes] = await Promise.all([
           api.get('/gallery'),
+          api.get('/gallery/albums'),
           api.get('/config')
         ]);
         setItems(galleryRes.data);
+        setAlbums(albumsRes.data);
         setConfig(configRes.data);
       } catch (err) {
         console.error('Failed to fetch gallery', err);
@@ -28,9 +31,8 @@ export function GalleryPage() {
     fetchGallery();
   }, []);
 
-  const categories = Array.from(new Set(items.map(item => item.category)));
-  const filteredItems = selectedCategory
-    ? items.filter(item => item.category === selectedCategory)
+  const filteredItems = selectedAlbum
+    ? items.filter(item => String(item.album_id) === selectedAlbum)
     : items;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-cream"><Loader2 className="animate-spin text-burgundy" size={48} /></div>;
@@ -45,29 +47,15 @@ export function GalleryPage() {
         )}
         <div className="relative z-10">
           <motion.h1
-            initial={{
-              opacity: 0,
-              y: 20
-            }}
-            animate={{
-              opacity: 1,
-              y: 0
-            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold mb-4">
             Photo Gallery
           </motion.h1>
           <motion.p
-            initial={{
-              opacity: 0,
-              y: 20
-            }}
-            animate={{
-              opacity: 1,
-              y: 0
-            }}
-            transition={{
-              delay: 0.1
-            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             className="text-lg text-cream-dark/90 max-w-2xl mx-auto">
             Capturing moments of faith, fellowship, and service.
           </motion.p>
@@ -75,24 +63,29 @@ export function GalleryPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 mt-12">
+        {/* Album Filter Tabs */}
         <div className="flex flex-wrap justify-center gap-2 mb-12">
           <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!selectedCategory ? 'bg-burgundy text-softWhite' : 'bg-softWhite text-navy border border-cream-dark'}`}
+            onClick={() => setSelectedAlbum(null)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!selectedAlbum ? 'bg-burgundy text-softWhite' : 'bg-softWhite text-navy border border-cream-dark'}`}
           >
-            All
+            <span className="flex items-center gap-1">
+              <FolderOpen size={14} />
+              All Albums
+            </span>
           </button>
-          {categories.map(cat => (
+          {albums.map(album => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat ? 'bg-burgundy text-softWhite' : 'bg-softWhite text-navy border border-cream-dark'}`}
+              key={album.id}
+              onClick={() => setSelectedAlbum(String(album.id))}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedAlbum === String(album.id) ? 'bg-burgundy text-softWhite' : 'bg-softWhite text-navy border border-cream-dark'}`}
             >
-              {cat}
+              {album.title}
             </button>
           ))}
         </div>
 
+        {/* Gallery Grid */}
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
           {filteredItems.length > 0 ? filteredItems.map((item) => (
             <motion.div
@@ -110,11 +103,14 @@ export function GalleryPage() {
               />
               <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="text-white text-sm font-medium">{item.title}</p>
+                {item.caption && <p className="text-white/80 text-xs mt-1 line-clamp-1">{item.caption}</p>}
               </div>
             </motion.div>
           )) : (
             <div className="col-span-full py-20 text-center text-navy/40 font-serif italic text-xl">
-              The gallery is empty. More memories coming soon!
+              {selectedAlbum 
+                ? `No photos in this album yet.`
+                : 'The gallery is empty. More memories coming soon!'}
             </div>
           )}
         </div>

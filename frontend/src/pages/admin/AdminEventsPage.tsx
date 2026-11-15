@@ -11,7 +11,9 @@ import {
     Save,
     Clock,
     Users,
-    Download
+    Download,
+    UserPlus,
+    Trash as TrashIcon
 } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
@@ -30,6 +32,9 @@ export function AdminEventsPage() {
     const [selectedRsvpEvent, setSelectedRsvpEvent] = useState<any>(null);
     const [rsvps, setRsvps] = useState<any[]>([]);
     const [loadingRsvps, setLoadingRsvps] = useState(false);
+    const [addingRsvp, setAddingRsvp] = useState(false);
+    const [rsvpFormData, setRsvpFormData] = useState({ name: '', phone_number: '' });
+    const [rsvpError, setRsvpError] = useState('');
 
     const [formData, setFormData] = useState({
         title: '',
@@ -149,7 +154,7 @@ export function AdminEventsPage() {
             setIsCategoryModalOpen(false);
             setCategoryFormData({ name: '', slug: '' });
             fetchCategories();
-            fetchEvents(); // optional refresh 
+            fetchEvents();
         } catch (err: any) {
             const errorMsg = err.response?.data?.error || 'Failed to create category';
             alert(errorMsg);
@@ -162,6 +167,8 @@ export function AdminEventsPage() {
     const handleOpenRsvps = async (event: any) => {
         setSelectedRsvpEvent(event);
         setLoadingRsvps(true);
+        setRsvpFormData({ name: '', phone_number: '' });
+        setRsvpError('');
         try {
             const res = await api.get(`/events/${event.id}/rsvps`);
             setRsvps(res.data);
@@ -169,6 +176,32 @@ export function AdminEventsPage() {
             console.error('Failed to fetch RSVPs', err);
         } finally {
             setLoadingRsvps(false);
+        }
+    };
+
+    const handleAddRsvp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!rsvpFormData.name.trim() || !rsvpFormData.phone_number.trim()) return;
+        setAddingRsvp(true);
+        setRsvpError('');
+        try {
+            await api.post(`/events/${selectedRsvpEvent.id}/rsvp`, rsvpFormData);
+            setRsvps(prev => [{ name: rsvpFormData.name, phone_number: rsvpFormData.phone_number, created_at: new Date().toISOString() }, ...prev]);
+            setRsvpFormData({ name: '', phone_number: '' });
+        } catch (err: any) {
+            setRsvpError(err.response?.data?.error || 'Failed to add attendee');
+        } finally {
+            setAddingRsvp(false);
+        }
+    };
+
+    const handleDeleteRsvp = async (id: number) => {
+        if (!window.confirm('Remove this attendee?')) return;
+        try {
+            await api.delete(`/events/rsvp/${id}`);
+            setRsvps(prev => prev.filter(r => r.id !== id));
+        } catch (err) {
+            console.error('Failed to delete RSVP', err);
         }
     };
 
@@ -337,7 +370,7 @@ export function AdminEventsPage() {
             {/* View RSVPs Modal */}
             {selectedRsvpEvent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-navy/60 backdrop-blur-sm" onClick={() => setSelectedRsvpEvent(null)}></div>
+                    <div className="absolute inset-0 bg-navy/60 backdrop-blur-sm" onClick={() => { setSelectedRsvpEvent(null); setRsvps([]); }}></div>
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="p-4 sm:p-6 border-b border-navy/5 flex items-center justify-between bg-navy text-softWhite">
                             <div>
@@ -355,7 +388,7 @@ export function AdminEventsPage() {
                                         <span className="hidden sm:inline">Export CSV</span>
                                     </button>
                                 )}
-                                <button onClick={() => setSelectedRsvpEvent(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <button onClick={() => { setSelectedRsvpEvent(null); setRsvps([]); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                                     <X size={24} />
                                 </button>
                             </div>
@@ -364,38 +397,99 @@ export function AdminEventsPage() {
                         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-cream">
                             {loadingRsvps ? (
                                 <div className="flex justify-center p-8"><Loader2 className="animate-spin text-burgundy" size={32} /></div>
-                            ) : rsvps.length === 0 ? (
-                                <div className="text-center py-12 text-navy/50 font-serif italic text-lg">
-                                    No RSVPs found for this event yet.
-                                </div>
                             ) : (
-                                <div className="bg-white rounded-xl shadow-sm border border-navy/5 overflow-hidden overflow-x-auto text-sm">
-                                    <table className="w-full text-left min-w-[500px]">
-                                        <thead className="bg-navy/[0.02] border-b border-navy/5">
-                                            <tr>
-                                                <th className="px-6 py-4 font-semibold text-navy">Name</th>
-                                                <th className="px-6 py-4 font-semibold text-navy">Phone Number</th>
-                                                <th className="px-6 py-4 font-semibold text-navy">Date Registered</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-navy/5">
-                                            {rsvps.map(rsvp => (
-                                                <tr key={rsvp.id} className="hover:bg-navy/[0.01] transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-navy">{rsvp.name}</td>
-                                                    <td className="px-6 py-4 text-navy/60">{rsvp.phone_number}</td>
-                                                    <td className="px-6 py-4 text-navy/60">{new Date(rsvp.created_at).toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot className="bg-cream border-t border-navy/5">
-                                            <tr>
-                                                <td colSpan={3} className="px-6 py-3 text-right font-medium text-navy">
-                                                    Total Attendees: {rsvps.length}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
+                                <>
+                                    {/* Add RSVP Form */}
+                                    <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border border-navy/5">
+                                        <h4 className="text-sm font-semibold text-navy mb-3 flex items-center gap-2">
+                                            <UserPlus size={16} className="text-burgundy" />
+                                            Add Attendee Manually
+                                        </h4>
+                                        <form onSubmit={handleAddRsvp} className="flex flex-col sm:flex-row gap-3 items-end">
+                                            {rsvpError && (
+                                                <div className="sm:col-span-2 p-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium w-full">
+                                                    {rsvpError}
+                                                </div>
+                                            )}
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium text-navy/70 mb-1">Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={rsvpFormData.name}
+                                                    onChange={e => setRsvpFormData({ ...rsvpFormData, name: e.target.value })}
+                                                    className="w-full px-4 py-2 bg-softWhite border border-navy/10 rounded-lg focus:ring-2 focus:ring-burgundy outline-none"
+                                                    placeholder="John Doe"
+                                                    disabled={addingRsvp}
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium text-navy/70 mb-1">Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    required
+                                                    value={rsvpFormData.phone_number}
+                                                    onChange={e => setRsvpFormData({ ...rsvpFormData, phone_number: e.target.value })}
+                                                    className="w-full px-4 py-2 bg-softWhite border border-navy/10 rounded-lg focus:ring-2 focus:ring-burgundy outline-none"
+                                                    placeholder="+254 700 000 000"
+                                                    disabled={addingRsvp}
+                                                />
+                                            </div>
+                                            <button
+                                                type="submit"
+                                                disabled={addingRsvp || !rsvpFormData.name.trim() || !rsvpFormData.phone_number.trim()}
+                                                className="bg-burgundy hover:bg-burgundy-light text-softWhite px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                                            >
+                                                {addingRsvp ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                                                <span>Add</span>
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    {rsvps.length === 0 ? (
+                                        <div className="text-center py-12 text-navy/50 font-serif italic text-lg">
+                                            No RSVPs found for this event yet.
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white rounded-xl shadow-sm border border-navy/5 overflow-hidden overflow-x-auto text-sm">
+                                            <table className="w-full text-left min-w-[500px]">
+                                                <thead className="bg-navy/[0.02] border-b border-navy/5">
+                                                    <tr>
+                                                        <th className="px-6 py-4 font-semibold text-navy">Name</th>
+                                                        <th className="px-6 py-4 font-semibold text-navy">Phone Number</th>
+                                                        <th className="px-6 py-4 font-semibold text-navy">Date Registered</th>
+                                                        <th className="px-6 py-4 font-semibold text-navy text-right">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-navy/5">
+                                                    {rsvps.map(rsvp => (
+                                                        <tr key={rsvp.id} className="hover:bg-navy/[0.01] transition-colors">
+                                                            <td className="px-6 py-4 font-medium text-navy">{rsvp.name}</td>
+                                                            <td className="px-6 py-4 text-navy/60">{rsvp.phone_number}</td>
+                                                            <td className="px-6 py-4 text-navy/60">{new Date(rsvp.created_at).toLocaleString()}</td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <button
+                                                                    onClick={() => handleDeleteRsvp(rsvp.id)}
+                                                                    className="p-2 text-navy/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    title="Remove Attendee"
+                                                                >
+                                                                    <TrashIcon size={14} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                                <tfoot className="bg-cream border-t border-navy/5">
+                                                    <tr>
+                                                        <td colSpan={4} className="px-6 py-3 text-right font-medium text-navy">
+                                                            Total Attendees: {rsvps.length}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
