@@ -188,7 +188,7 @@ export function EventsPage() {
                                                     </div>
                                                 </div>
 
-                                                {!showPast && (
+                                                {!showPast && event.enable_rsvp && (
                                                     <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                                                         <button
                                                             onClick={() => setRsvpEvent(event)}

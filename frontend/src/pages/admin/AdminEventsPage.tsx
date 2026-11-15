@@ -44,7 +44,8 @@ export function AdminEventsPage() {
         description: '',
         category: 'Youth Mass',
         image_url: '',
-        is_featured: false
+        is_featured: false,
+        enable_rsvp: false
     });
 
     useEffect(() => {
@@ -99,7 +100,8 @@ export function AdminEventsPage() {
                 description: event.description,
                 category: event.category,
                 image_url: event.image_url,
-                is_featured: event.is_featured || false
+                is_featured: event.is_featured || false,
+                enable_rsvp: event.enable_rsvp || false
             });
         } else {
             setEditingEvent(null);
@@ -111,7 +113,8 @@ export function AdminEventsPage() {
                 description: '',
                 category: categories[0]?.name || '',
                 image_url: '',
-                is_featured: false
+                is_featured: false,
+                enable_rsvp: false
             });
         }
         setIsModalOpen(true);
@@ -309,12 +312,15 @@ export function AdminEventsPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <div className="flex items-center space-x-2">
-                                                <p className="font-medium text-navy line-clamp-1">{event.title}</p>
-                                                {event.is_featured && (
-                                                    <span className="text-[10px] uppercase font-bold text-gold bg-gold/5 px-1.5 py-0.5 rounded border border-gold/20">Featured</span>
-                                                )}
-                                            </div>
+<div className="flex items-center space-x-2">
+                                                    <p className="font-medium text-navy line-clamp-1">{event.title}</p>
+                                                    {event.is_featured && (
+                                                        <span className="text-[10px] uppercase font-bold text-gold bg-gold/5 px-1.5 py-0.5 rounded border border-gold/20">Featured</span>
+                                                    )}
+                                                    {event.enable_rsvp && (
+                                                        <span className="text-[10px] uppercase font-bold text-burgundy bg-burgundy/5 px-1.5 py-0.5 rounded border border-burgundy/20">RSVP Enabled</span>
+                                                    )}
+                                                </div>
                                             <span className="text-xs text-burgundy font-medium">{event.category}</span>
                                         </div>
                                     </div>
@@ -560,6 +566,22 @@ export function AdminEventsPage() {
                                         <span className="text-sm font-medium text-navy/70">Featured Event (Display prominently on homepage)</span>
                                     </label>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2 col-span-2">
+                                <label className="flex items-center space-x-3 cursor-pointer">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={formData.enable_rsvp}
+                                            onChange={(e) => setFormData({ ...formData, enable_rsvp: e.target.checked })}
+                                        />
+                                        <div className={`block w-10 h-6 rounded-full transition-colors ${formData.enable_rsvp ? 'bg-burgundy' : 'bg-navy/20'}`}></div>
+                                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${formData.enable_rsvp ? 'translate-x-4' : ''}`}></div>
+                                    </div>
+                                    <span className="text-sm font-medium text-navy/70">Enable RSVP (Allow visitors to reserve spots on the Events page)</span>
+                                </label>
                             </div>
 
                             <div className="space-y-2">
