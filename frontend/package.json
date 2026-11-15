@@ -10,7 +10,6 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.61.3",
     "@emotion/react": "^11.13.3",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.13.6",

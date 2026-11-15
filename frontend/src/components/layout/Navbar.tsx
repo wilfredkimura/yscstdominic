@@ -42,9 +42,7 @@ export function Navbar() {
     { name: 'About', path: '/about' },
     { name: 'Events', path: '/events' },
     { name: 'Blog', path: '/blog' },
-    { name: 'Gallery', path: '/gallery' },
-    { name: 'Resources', path: '/resources' },
-    { name: 'Prayer Wall', path: '/prayer-wall' }
+    { name: 'Gallery', path: '/gallery' }
   ];
 
   const isActive = (path: string) => {

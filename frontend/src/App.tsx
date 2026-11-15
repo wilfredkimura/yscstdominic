@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ClerkProvider } from '@clerk/clerk-react';
 import { ScrollToTop } from './components/ScrollToTop';
-import { AxiosInterceptor } from './components/providers/AxiosInterceptor';
 import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
@@ -13,8 +11,6 @@ import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
 import { GetInvolvedPage } from './pages/GetInvolvedPage';
 import { AuthPage } from './pages/AuthPage';
-import { PrayerWallPage } from './pages/PrayerWallPage';
-import { ResourcesPage } from './pages/ResourcesPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
@@ -23,7 +19,6 @@ import { AdminEventsPage } from './pages/admin/AdminEventsPage';
 import { AdminGalleryPage } from './pages/admin/AdminGalleryPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminLeadersPage } from './pages/admin/AdminLeadersPage';
-import { AdminResourcesPage } from './pages/admin/AdminResourcesPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { useAuth } from './context/AuthContext';
 import { Analytics } from '@vercel/analytics/react';
@@ -49,8 +44,6 @@ function AppRoutes() {
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="get-involved" element={<GetInvolvedPage />} />
-        <Route path="prayer-wall" element={<PrayerWallPage />} />
-        <Route path="resources" element={<ResourcesPage />} />
         <Route
           path="login"
           element={user ? <Navigate to="/admin" replace /> : <AuthPage />}
@@ -80,7 +73,6 @@ function AppRoutes() {
         <Route path="gallery" element={<AdminGalleryPage />} />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="leaders" element={<AdminLeadersPage />} />
-        <Route path="resources" element={<AdminResourcesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
 
@@ -91,19 +83,13 @@ function AppRoutes() {
 }
 
 export function App() {
-  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
-      <AxiosInterceptor>
-        <AuthProvider>
-          <Router>
-            <ScrollToTop />
-            <AppRoutes />
-            <Analytics />
-          </Router>
-        </AuthProvider>
-      </AxiosInterceptor>
-    </ClerkProvider>
+    <AuthProvider>
+      <Router>
+        <ScrollToTop />
+        <AppRoutes />
+        <Analytics />
+      </Router>
+    </AuthProvider>
   );
 }

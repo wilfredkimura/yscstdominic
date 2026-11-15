@@ -10,10 +10,9 @@ import {
     Settings,
     LogOut,
     Menu,
-    Bell,
     ChevronLeft,
     Home,
-    FolderOpen
+    Bell
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -48,7 +47,6 @@ export function AdminLayout() {
         { label: 'Blog Posts', icon: <FileText size={20} />, path: '/admin/blogs' },
         { label: 'Events', icon: <Calendar size={20} />, path: '/admin/events' },
         { label: 'Gallery', icon: <ImageIcon size={20} />, path: '/admin/gallery' },
-        { label: 'Resources', icon: <FolderOpen size={20} />, path: '/admin/resources' },
         { label: 'YSC Leaders', icon: <Users size={20} />, path: '/admin/leaders' },
         { label: 'User Management', icon: <Users size={20} />, path: '/admin/users' },
         { label: 'Settings', icon: <Settings size={20} />, path: '/admin/settings' },

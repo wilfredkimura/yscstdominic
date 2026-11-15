@@ -1,11 +1,43 @@
-import { SignIn, SignUp } from '@clerk/clerk-react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Church } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import { Button } from '../components/ui/Button';
 
 export function AuthPage() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'signin';
+    const isSignIn = mode === 'signin';
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            const endpoint = isSignIn ? '/auth/login' : '/auth/register';
+            const payload = isSignIn ? { email, password } : { email, password, fullName };
+
+            const res = await api.post(endpoint, payload);
+            login(res.data.token, res.data.user);
+            navigate(res.data.user?.role === 'Admin' ? '/admin' : '/');
+        } catch (err: any) {
+            setError(err.response?.data?.message || err.response?.data?.error || (isSignIn ? 'Login failed' : 'Registration failed'));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-[90vh] flex items-center justify-center px-4 py-12 bg-cream">
@@ -28,10 +60,10 @@ export function AuthPage() {
                         </Link>
 
                         <h2 className="text-4xl md:text-5xl font-serif font-bold mb-8 leading-tight">
-                            {mode === 'signin' ? "Welcome Back to Faith" : "Begin Your Journey Here"}
+                            {isSignIn ? "Welcome Back to Faith" : "Begin Your Journey Here"}
                         </h2>
                         <p className="text-cream-dark/80 text-lg leading-relaxed font-light">
-                            {mode === 'signin'
+                            {isSignIn
                                 ? "Sign in to continue your journey of faith, service, and fellowship with the YSC community."
                                 : "Join our community to participate in events, share reflections, and grow in Christ together."}
                         </p>
@@ -50,46 +82,95 @@ export function AuthPage() {
                     </div>
                 </div>
 
-                {/* Right Side: Clerk Auth Component */}
-                <div className="md:w-7/12 p-8 md:p-14 bg-white flex flex-col items-center justify-center min-h-[600px]">
-                    <div className="w-full max-w-md scale-105">
-                        {mode === 'signin' ? (
-                            <SignIn
-                                appearance={{
-                                    elements: {
-                                        formButtonPrimary: 'bg-burgundy hover:bg-burgundy-light text-gold font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-burgundy/20 text-sm tracking-widest uppercase',
-                                        card: 'shadow-none border-none p-0',
-                                        headerTitle: 'text-navy font-serif text-3xl font-bold mb-2',
-                                        headerSubtitle: 'text-navy/50 text-sm font-medium',
-                                        socialButtonsBlockButton: 'border-navy/5 hover:bg-navy/5 transition-colors rounded-xl py-3',
-                                        formFieldInput: 'bg-cream/30 border-navy/5 rounded-xl py-3 focus:ring-burgundy/10',
-                                        formFieldLabel: 'text-navy/60 font-bold uppercase tracking-wider text-[10px] mb-2',
-                                        footerActionLink: 'text-burgundy hover:text-burgundy-light font-bold'
-                                    }
-                                }}
-                                signUpUrl="/signup"
-                                routing="path"
-                                path="/login"
-                            />
-                        ) : (
-                            <SignUp
-                                appearance={{
-                                    elements: {
-                                        formButtonPrimary: 'bg-burgundy hover:bg-burgundy-light text-gold font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-burgundy/20 text-sm tracking-widest uppercase',
-                                        card: 'shadow-none border-none p-0',
-                                        headerTitle: 'text-navy font-serif text-3xl font-bold mb-2',
-                                        headerSubtitle: 'text-navy/50 text-sm font-medium',
-                                        socialButtonsBlockButton: 'border-navy/5 hover:bg-navy/5 transition-colors rounded-xl py-3',
-                                        formFieldInput: 'bg-cream/30 border-navy/5 rounded-xl py-3 focus:ring-burgundy/10',
-                                        formFieldLabel: 'text-navy/60 font-bold uppercase tracking-wider text-[10px] mb-2',
-                                        footerActionLink: 'text-burgundy hover:text-burgundy-light font-bold'
-                                    }
-                                }}
-                                signInUrl="/login"
-                                routing="path"
-                                path="/signup"
-                            />
+                {/* Right Side: Native Form */}
+                <div className="md:w-7/12 p-8 md:p-14 bg-white flex flex-col justify-center min-h-[600px]">
+                    <div className="w-full max-w-md mx-auto">
+                        <h3 className="text-3xl font-serif font-bold text-navy mb-2">
+                            {isSignIn ? 'Sign In' : 'Create an Account'}
+                        </h3>
+                        <p className="text-navy/60 text-sm mb-6">
+                            {isSignIn ? 'Enter your credentials to access your account' : 'Fill in details below to register'}
+                        </p>
+
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">
+                                {error}
+                            </div>
                         )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {!isSignIn && (
+                                <div>
+                                    <label className="block text-navy/60 font-bold uppercase tracking-wider text-[10px] mb-2">
+                                        Full Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full bg-cream/30 border border-navy/10 rounded-xl px-4 py-3 text-navy text-sm focus:outline-none focus:ring-2 focus:ring-burgundy/20"
+                                        placeholder="John Doe"
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-navy/60 font-bold uppercase tracking-wider text-[10px] mb-2">
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-cream/30 border border-navy/10 rounded-xl px-4 py-3 text-navy text-sm focus:outline-none focus:ring-2 focus:ring-burgundy/20"
+                                    placeholder="your.email@example.com"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-navy/60 font-bold uppercase tracking-wider text-[10px] mb-2">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-cream/30 border border-navy/10 rounded-xl px-4 py-3 text-navy text-sm focus:outline-none focus:ring-2 focus:ring-burgundy/20"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+
+                            <Button type="submit" className="w-full py-3 rounded-xl text-sm tracking-widest uppercase bg-burgundy hover:bg-burgundy-light text-gold font-bold mt-4" disabled={loading}>
+                                {loading ? (isSignIn ? 'Signing in...' : 'Registering...') : (isSignIn ? 'Sign In' : 'Create Account')}
+                            </Button>
+                        </form>
+
+                        <div className="mt-6 text-center text-sm text-navy/60">
+                            {isSignIn ? (
+                                <p>
+                                    Don't have an account?{' '}
+                                    <button
+                                        onClick={() => setSearchParams({ mode: 'signup' })}
+                                        className="text-burgundy hover:text-burgundy-light font-bold"
+                                    >
+                                        Sign Up
+                                    </button>
+                                </p>
+                            ) : (
+                                <p>
+                                    Already have an account?{' '}
+                                    <button
+                                        onClick={() => setSearchParams({ mode: 'signin' })}
+                                        className="text-burgundy hover:text-burgundy-light font-bold"
+                                    >
+                                        Sign In
+                                    </button>
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </motion.div>

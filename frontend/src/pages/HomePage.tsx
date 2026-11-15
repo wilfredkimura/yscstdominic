@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, ArrowRight, Church, Clock, MapPin } from 'lucide-react';
+import { Calendar, ArrowRight, Church, Clock, MapPin } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Link } from 'react-router-dom';
@@ -362,42 +362,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Prayer Wall CTA */}
-      <section className="py-16 md:py-28 px-4 relative overflow-hidden bg-navy">
-        <div className="absolute inset-0 z-0">
-          <ImageWithFallback
-            src={config?.homepage_images?.prayer_bg || "https://images.unsplash.com/photo-1507692049790-de58290a4334?w=1600&h=800&fit=crop"}
-            alt="Prayer candles"
-            fallback="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=1600&h=800&fit=crop"
-            className="w-full h-full object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/80 to-transparent" />
-        </div>
-        <div className="relative z-10 max-w-4xl mx-auto text-left md:text-center mt-8 md:mt-0">
-          <Heart className="w-12 h-12 md:w-16 md:h-16 text-gold mb-6 md:mb-8 md:mx-auto shadow-gold/20" />
-          <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold mb-6 md:mb-8 text-softWhite leading-tight">
-            How can we <span className="text-gold">pray</span> for you?
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-cream-dark/80 mb-10 md:mb-12 max-w-2xl md:mx-auto leading-relaxed font-medium">
-            "For where two or three are gathered in my name, I am there among
-            them." <br className="hidden md:block" />
-            Submit a prayer request and let us lift your intentions together.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center lg:justify-center gap-6">
-            <Button
-              as="link"
-              to="/prayer-wall"
-              size="lg"
-              className="bg-gold text-navy hover:bg-gold-light font-black px-12 py-7 rounded-2xl shadow-2xl hover:shadow-gold/30 transition-all border-0 w-full sm:w-auto text-lg"
-            >
-              Visit the Prayer Wall
-            </Button>
-            <Link to="/about" className="text-softWhite/70 hover:text-softWhite font-bold flex items-center gap-2 group transition-all underline-offset-8 hover:underline">
-              Learn about our mission <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
   );
 }

@@ -20,10 +20,6 @@ router.get('/stats', authMiddleware, adminRequired, async (req, res) => {
         const eventsRes = await db.query('SELECT COUNT(*) FROM events WHERE event_date >= CURRENT_TIMESTAMP AND deleted_at IS NULL');
         stats.upcomingEvents = parseInt(eventsRes.rows[0].count);
 
-        // Prayer Requests
-        const prayersRes = await db.query('SELECT COUNT(*) FROM prayer_requests WHERE deleted_at IS NULL');
-        stats.totalPrayers = parseInt(prayersRes.rows[0].count);
-
         res.json(stats);
     } catch (err) {
         console.error('Error fetching admin stats:', err);

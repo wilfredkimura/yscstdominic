@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
 
-interface User {
+export interface User {
     id: number | string;
     email: string;
     full_name: string;
     role: string;
+    profile_image_url?: string;
 }
 
 interface AuthContextType {
@@ -20,45 +20,55 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isLoaded, isSignedIn, user: clerkUser } = useUser();
-    const { signOut } = useClerkAuth();
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem('ysc_token'));
+    const [user, setUser] = useState<User | null>(() => {
+        const savedUser = localStorage.getItem('ysc_user');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+    const [loading, setLoading] = useState<boolean>(true);
 
-    const user = useMemo(() => {
-        if (!isLoaded || !isSignedIn || !clerkUser) return null;
+    const login = useCallback((newToken: string, newUser: User) => {
+        localStorage.setItem('ysc_token', newToken);
+        localStorage.setItem('ysc_user', JSON.stringify(newUser));
+        setToken(newToken);
+        setUser(newUser);
+    }, []);
 
-        return {
-            id: clerkUser.id,
-            email: clerkUser.primaryEmailAddress?.emailAddress || '',
-            full_name: clerkUser.fullName || '',
-            role: (clerkUser.publicMetadata?.role as string) || 'Registered User'
+    const logout = useCallback(() => {
+        localStorage.removeItem('ysc_token');
+        localStorage.removeItem('ysc_user');
+        setToken(null);
+        setUser(null);
+    }, []);
+
+    useEffect(() => {
+        const fetchMe = async () => {
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await api.get('/auth/me');
+                setUser(res.data);
+                localStorage.setItem('ysc_user', JSON.stringify(res.data));
+            } catch (err) {
+                console.error('Session expired or invalid token', err);
+                logout();
+            } finally {
+                setLoading(false);
+            }
         };
-    }, [isLoaded, isSignedIn, clerkUser]);
 
-    // Sync with local DB
-    React.useEffect(() => {
-        if (isSignedIn && clerkUser) {
-            const syncUser = async () => {
-                try {
-                    const email = clerkUser.primaryEmailAddress?.emailAddress;
-                    const fullName = clerkUser.fullName;
-                    const profileImageUrl = clerkUser.imageUrl;
-
-                    await api.post('/auth/sync', { email, fullName, profileImageUrl });
-                } catch (err) {
-                    console.error('Failed to sync user with local DB', err);
-                }
-            };
-            syncUser();
-        }
-    }, [isSignedIn, clerkUser]);
+        fetchMe();
+    }, [token, logout]);
 
     const value = useMemo(() => ({
         user,
-        token: null, // Clerk tokens are fetched dynamically via getToken() in the Axios interceptor
-        login: () => { console.warn('Local login is disabled. Use Clerk instead.'); },
-        logout: () => signOut(),
-        loading: !isLoaded
-    }), [user, isLoaded, signOut]);
+        token,
+        login,
+        logout,
+        loading
+    }), [user, token, login, logout, loading]);
 
     return (
         <AuthContext.Provider value={value}>

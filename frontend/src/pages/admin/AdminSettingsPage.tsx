@@ -137,10 +137,9 @@ export function AdminSettingsPage() {
                         description="Customize additional images across the landing page."
                         onSave={(data) => handleUpdate('homepage_images', data)}
                         saving={saving}
-                        initialData={configs?.homepage_images || { about_image: "", prayer_bg: "" }}
+                        initialData={configs?.homepage_images || { about_image: "" }}
                         fields={[
                             { key: 'about_image', label: 'About Section Image URL', type: 'text' },
-                            { key: 'prayer_bg', label: 'Prayer Wall Background URL', type: 'text' }
                         ]}
                     />
                 </div>
@@ -153,13 +152,12 @@ export function AdminSettingsPage() {
                         description="Provide image URLs to be used as header backgrounds for specific public pages. Leave empty to use the default solid color."
                         onSave={(data) => handleUpdate('page_backgrounds', data)}
                         saving={saving}
-                        initialData={configs?.page_backgrounds || { about: "", events: "", blog: "", gallery: "", prayer_wall: "", get_involved: "" }}
+                        initialData={configs?.page_backgrounds || { about: "", events: "", blog: "", gallery: "", get_involved: "" }}
                         fields={[
                             { key: 'about', label: 'About Page Background URL', type: 'image' },
                             { key: 'events', label: 'Events Page Background URL', type: 'image' },
                             { key: 'blog', label: 'Blog Page Background URL', type: 'image' },
                             { key: 'gallery', label: 'Gallery Page Background URL', type: 'image' },
-                            { key: 'prayer_wall', label: 'Prayer Wall Page Background URL', type: 'image' },
                             { key: 'get_involved', label: 'Get Involved Page Background URL', type: 'image' }
                         ]}
                     />

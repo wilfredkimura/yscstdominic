@@ -7,29 +7,33 @@ const { authMiddleware, adminRequired } = require('../middleware/customAuth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
 
-// Register (Legacy - now use sync)
+// Register
 router.post('/register', async (req, res) => {
-    res.status(410).json({ message: 'Registration has moved to Clerk' });
-});
-
-// User Sync (Clerk)
-router.post('/sync', authMiddleware, async (req, res) => {
-    const { email, fullName, profileImageUrl } = req.body;
-    const clerkId = req.user.id; // From authMiddleware bridge
+    const { email, password, fullName } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     try {
+        const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
         const result = await db.query(
-            `INSERT INTO users (clerk_id, email, full_name, profile_image_url)
+            `INSERT INTO users (email, password_hash, full_name, role)
              VALUES ($1, $2, $3, $4)
-             ON CONFLICT (clerk_id) DO UPDATE SET
-                email = EXCLUDED.email,
-                full_name = EXCLUDED.full_name,
-                profile_image_url = EXCLUDED.profile_image_url,
-                updated_at = CURRENT_TIMESTAMP
-             RETURNING *`,
-            [clerkId, email, fullName, profileImageUrl]
+             RETURNING id, email, full_name, role, created_at`,
+            [email, passwordHash, fullName || '', 'Registered User']
         );
-        res.json(result.rows[0]);
+
+        const user = result.rows[0];
+        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.status(201).json({ user, token });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -38,15 +42,23 @@ router.post('/sync', authMiddleware, async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     try {
         const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
         if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
 
         const user = result.rows[0];
+        if (!user.password_hash) {
+            return res.status(401).json({ message: 'Account was registered with an external service or has no password set' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
         const { password_hash, ...userWithoutPassword } = user;
         res.json({ user: userWithoutPassword, token });
     } catch (err) {
@@ -55,17 +67,13 @@ router.post('/login', async (req, res) => {
 });
 
 // Get Me
-router.get('/me', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'No token provided' });
-
+router.get('/me', authMiddleware, async (req, res) => {
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const result = await db.query('SELECT id, email, full_name, role FROM users WHERE id = $1', [decoded.id]);
+        const result = await db.query('SELECT id, email, full_name, role, profile_image_url FROM users WHERE id = $1', [req.user.id]);
         if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
         res.json(result.rows[0]);
     } catch (err) {
-        res.status(401).json({ message: 'Invalid token' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -94,11 +102,9 @@ router.put('/users/:id', authMiddleware, adminRequired, async (req, res) => {
     }
 });
 
-// Delete user (Admin - soft delete would be better but let's do hard delete or toggle status if column exists)
+// Delete user (Admin)
 router.delete('/users/:id', authMiddleware, adminRequired, async (req, res) => {
     try {
-        // For safety, let's just make them a restricted role or similar if we don't have a status column.
-        // But the user asked for delete, so let's do delete.
         await db.query('DELETE FROM users WHERE id = $1', [req.params.id]);
         res.json({ message: 'User deleted' });
     } catch (err) {

@@ -51,7 +51,6 @@ export function Footer() {
                 'About Us',
                 'Upcoming Events',
                 'Blog & Reflections',
-                'Prayer Wall',
                 'Gallery'].
                 map((item) =>
                   <li key={item}>
@@ -61,9 +60,8 @@ export function Footer() {
                           item === 'About Us' ? '/about' :
                             item === 'Upcoming Events' ? '/events' :
                               item === 'Blog & Reflections' ? '/blog' :
-                                item === 'Prayer Wall' ? '/prayer-wall' :
-                                  item === 'Gallery' ? '/gallery' :
-                                    `/${item.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`
+                                item === 'Gallery' ? '/gallery' :
+                                  `/${item.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`
                       }
                       className="text-cream-dark/80 hover:text-gold transition-colors">
                       {item}
